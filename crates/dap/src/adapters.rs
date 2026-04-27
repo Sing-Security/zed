@@ -18,7 +18,7 @@ use std::{
     borrow::Borrow,
     ffi::OsStr,
     fmt::Debug,
-    net::IpAddr,
+    net::Ipv4Addr,
     ops::Deref,
     path::{Path, PathBuf},
     sync::Arc,
@@ -106,7 +106,7 @@ impl<'a> From<&'a str> for DebugAdapterName {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct TcpArguments {
-    pub host: IpAddr,
+    pub host: Ipv4Addr,
     pub port: u16,
     pub timeout: Option<u64>,
 }

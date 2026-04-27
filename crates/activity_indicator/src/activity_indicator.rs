@@ -729,7 +729,13 @@ impl Render for ActivityIndicator {
                         }
                     })
                     .label_size(LabelSize::Small)
-                    .loading(content.icon.is_some())
+                    .when(content.icon.is_some(), |this| {
+                        this.start_icon(
+                            Icon::new(IconName::LoadCircle)
+                                .color(Color::Muted)
+                                .size(IconSize::Small),
+                        )
+                    })
                     .map(|button| {
                         if truncate_content {
                             button.tooltip(Tooltip::text(content.message))

@@ -6331,7 +6331,14 @@ impl ThreadView {
 
         is_open |= needs_confirmation;
 
-        let should_show_raw_input = !is_terminal_tool && !is_edit && !has_image_content;
+        // Only show Raw Input/Output headers when the tool actually has raw_input
+        // (i.e., a model-initiated tool call with JSON arguments). Synthetic pipeline
+        // tool calls (search, reasoning blocks) have no raw_input and render cleaner
+        // without the extra scaffolding.
+        let should_show_raw_input = !is_terminal_tool
+            && !is_edit
+            && !has_image_content
+            && tool_call.raw_input.is_some();
 
         let input_output_header = |label: SharedString| {
             Label::new(label)
@@ -7755,7 +7762,7 @@ impl ThreadView {
             .into_any_element()
     }
 
-    fn render_subagent_tool_call(
+    pub(crate) fn render_subagent_tool_call(
         &self,
         active_session_id: &acp::SessionId,
         entry_ix: usize,
@@ -7785,7 +7792,7 @@ impl ThreadView {
         v_flex().mx_5().my_1p5().gap_3().child(content)
     }
 
-    fn render_subagent_card(
+    pub(crate) fn render_subagent_card(
         &self,
         active_session_id: &acp::SessionId,
         entry_ix: usize,

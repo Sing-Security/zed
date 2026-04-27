@@ -390,19 +390,14 @@ pub fn into_mistral(
                             // Tool use is not supported in User messages for Mistral
                         }
                         MessageContent::ToolResult(tool_result) => {
-                            let mut text_parts: Vec<String> = Vec::new();
-                            for part in &tool_result.content {
-                                match part {
-                                    LanguageModelToolResultContent::Text(text) => {
-                                        text_parts.push(text.to_string());
-                                    }
-                                    LanguageModelToolResultContent::Image(_) => {
-                                        text_parts.push("[Tool responded with an image, but Zed doesn't support these in Mistral models yet]".to_string());
-                                    }
+                            let tool_content = match &tool_result.content {
+                                LanguageModelToolResultContent::Text(text) => text.to_string(),
+                                LanguageModelToolResultContent::Image(_) => {
+                                    "[Tool responded with an image, but Zed doesn't support these in Mistral models yet]".to_string()
                                 }
-                            }
+                            };
                             messages.push(mistral::RequestMessage::Tool {
-                                content: text_parts.join("\n"),
+                                content: tool_content,
                                 tool_call_id: tool_result.tool_use_id.to_string(),
                             });
                         }

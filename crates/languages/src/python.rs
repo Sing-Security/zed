@@ -658,22 +658,8 @@ impl LspAdapter for PyrightLspAdapter {
                     .and_then(|s| s.settings.clone())
                     .unwrap_or_default();
 
-            // If we have a detected toolchain, configure Pyright to use it - unless the user sets it themselves.
-            let should_insert_toolchain = || {
-                user_settings.as_object().is_none_or(|object| {
-                    [
-                        "venvPath",
-                        "venv",
-                        "python",
-                        "pythonPath",
-                        "defaultInterpreterPath",
-                    ]
-                    .into_iter()
-                    .any(|known_key| object.contains_key(known_key))
-                })
-            };
+            // If we have a detected toolchain, configure Pyright to use it
             if let Some(toolchain) = toolchain
-                && should_insert_toolchain()
                 && let Ok(env) =
                     serde_json::from_value::<PythonToolchainData>(toolchain.as_json.clone())
             {
@@ -2089,21 +2075,7 @@ impl LspAdapter for BasedPyrightLspAdapter {
                     .unwrap_or_default();
 
             // If we have a detected toolchain, configure Pyright to use it
-            let should_insert_toolchain = || {
-                user_settings.as_object().is_none_or(|object| {
-                    [
-                        "venvPath",
-                        "venv",
-                        "python",
-                        "pythonPath",
-                        "defaultInterpreterPath",
-                    ]
-                    .into_iter()
-                    .any(|known_key| object.contains_key(known_key))
-                })
-            };
             if let Some(toolchain) = toolchain
-                && should_insert_toolchain()
                 && let Ok(env) = serde_json::from_value::<
                     pet_core::python_environment::PythonEnvironment,
                 >(toolchain.as_json.clone())

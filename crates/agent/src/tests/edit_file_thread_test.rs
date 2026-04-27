@@ -387,7 +387,10 @@ async fn test_streaming_edit_json_parse_error_does_not_cause_unsaved_changes(
         "Tool result should succeed, got: {:?}",
         tool_result
     );
-    let content_text = tool_result.text_contents();
+    let content_text = match &tool_result.content {
+        language_model::LanguageModelToolResultContent::Text(t) => t.to_string(),
+        other => panic!("Expected text content, got: {:?}", other),
+    };
     assert!(
         !content_text.contains("file has been modified since you last read it"),
         "Did not expect a stale last-read error, got: {content_text}"

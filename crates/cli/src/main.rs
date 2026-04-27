@@ -1101,7 +1101,7 @@ mod windows {
     use crate::{Detect, InstalledApp};
     use std::io;
     use std::path::{Path, PathBuf};
-    use std::process::{ExitStatus, Stdio};
+    use std::process::ExitStatus;
 
     fn check_single_instance() -> bool {
         let mutex = unsafe {
@@ -1144,9 +1144,6 @@ mod windows {
                 if let Some(dir) = user_data_dir {
                     cmd.arg("--user-data-dir").arg(dir);
                 }
-                cmd.stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null());
                 cmd.spawn()?;
             } else {
                 unsafe {

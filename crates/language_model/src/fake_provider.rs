@@ -125,7 +125,6 @@ pub struct FakeLanguageModel {
     forbid_requests: AtomicBool,
     supports_thinking: AtomicBool,
     supports_streaming_tools: AtomicBool,
-    supports_images: AtomicBool,
 }
 
 impl Default for FakeLanguageModel {
@@ -139,7 +138,6 @@ impl Default for FakeLanguageModel {
             forbid_requests: AtomicBool::new(false),
             supports_thinking: AtomicBool::new(false),
             supports_streaming_tools: AtomicBool::new(false),
-            supports_images: AtomicBool::new(false),
         }
     }
 }
@@ -174,10 +172,6 @@ impl FakeLanguageModel {
 
     pub fn set_supports_streaming_tools(&self, supports: bool) {
         self.supports_streaming_tools.store(supports, SeqCst);
-    }
-
-    pub fn set_supports_images(&self, supports: bool) {
-        self.supports_images.store(supports, SeqCst);
     }
 
     pub fn pending_completions(&self) -> Vec<LanguageModelRequest> {
@@ -286,7 +280,7 @@ impl LanguageModel for FakeLanguageModel {
     }
 
     fn supports_images(&self) -> bool {
-        self.supports_images.load(SeqCst)
+        false
     }
 
     fn supports_thinking(&self) -> bool {

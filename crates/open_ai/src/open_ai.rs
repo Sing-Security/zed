@@ -272,12 +272,17 @@ impl Model {
         }
     }
 
-    pub fn uses_responses_api(&self) -> bool {
+    pub fn supports_chat_completions(&self) -> bool {
         match self {
             Self::Custom {
                 supports_chat_completions,
                 ..
-            } => !*supports_chat_completions,
+            } => *supports_chat_completions,
+            Self::FiveCodex
+            | Self::FivePointTwoCodex
+            | Self::FivePointThreeCodex
+            | Self::FivePointFourPro
+            | Self::FivePointFivePro => false,
             _ => true,
         }
     }
