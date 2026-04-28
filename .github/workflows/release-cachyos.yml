@@ -1,0 +1,111 @@
+name: Release — CachyOS Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      pkgrel:
+        description: 'Package release number (pkgrel)'
+        required: false
+        default: '1'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  build-package:
+    name: Build & Package (CachyOS)
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derive version from tag or Cargo.toml
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*= *"\(.*\)"/\1/')
+          fi
+          PKGREL="${{ github.event.inputs.pkgrel || '1' }}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "pkgrel=${PKGREL}"   >> "$GITHUB_OUTPUT"
+          echo "pkgver=${VERSION}-${PKGREL}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure build dependencies are present
+        run: |
+          sudo apk add --no-cache \
+            build-base mold clang cmake pkgconf gettext \
+            rust cargo \
+            alsa-lib-dev fontconfig-dev libgit2-dev libxcb-dev \
+            libxkbcommon-dev openssl-dev sqlite-dev wayland-dev \
+            zlib-dev zstd-dev vulkan-loader-dev \
+            fakeroot libarchive-tools binutils
+
+      - name: Build Zed (release)
+        run: |
+          cargo build --release --bin zed 2>&1 | tail -5
+          echo "Binary size: $(du -sh target/release/zed | cut -f1)"
+
+      - name: Assemble package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PKGREL: ${{ steps.version.outputs.pkgrel }}
+        run: bash .github/scripts/package-cachyos.sh
+
+      - name: Find built package
+        id: pkg
+        run: |
+          PKG=$(ls pkg/zed-crucititan-*.pkg.tar.zst 2>/dev/null | head -1)
+          if [[ -z "${PKG}" ]]; then
+            echo "ERROR: No package file found under pkg/"
+            exit 1
+          fi
+          echo "path=${PKG}" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "${PKG}")" >> "$GITHUB_OUTPUT"
+          SIG="${PKG}.sig"
+          echo "sig_exists=$([[ -f "${SIG}" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Zed CruciTitan ${{ steps.version.outputs.version }}"
+          draft: false
+          prerelease: false
+          files: ${{ steps.pkg.outputs.path }}
+          body: |
+            ## CruciTitan Zed — ${{ steps.version.outputs.version }}
+
+            ### Install (CachyOS / Arch)
+            ```bash
+            curl -LO https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.pkg.outputs.name }}
+            sudo pacman -U ${{ steps.pkg.outputs.name }}
+            ```
+
+            **Conflicts with**: `zed`, `zed-git`, `zed-preview` — remove them first if installed.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attach package signature to release
+        if: startsWith(github.ref, 'refs/tags/') && steps.pkg.outputs.sig_exists == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.pkg.outputs.path }}.sig
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload package artifact (non-tag builds)
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: zed-crucititan-${{ steps.version.outputs.pkgver }}-x86_64
+          path: pkg/*.pkg.tar.zst
+          retention-days: 14

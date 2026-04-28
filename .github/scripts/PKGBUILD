@@ -1,0 +1,111 @@
+# Maintainer: Rock3t <info@lfam.us>
+# CruciTitan fork of Zed — built from source.
+# Use this PKGBUILD to install directly with makepkg/yay/paru.
+
+pkgname=zed-crucititan
+pkgver=0.1.0    # bumped by CI via sed before makepkg
+pkgrel=1
+pkgdesc="CruciTitan — AI-augmented Zed editor with agent harness"
+arch=('x86_64')
+url="https://github.com/Rock3t/zed"
+license=('GPL-3.0-or-later' 'Apache-2.0')
+provides=("zed=${pkgver}")
+conflicts=('zed' 'zed-git' 'zed-preview')
+
+depends=(
+    alsa-lib
+    fontconfig
+    musl
+    libgit2
+    libxcb
+    libxkbcommon
+    openssl
+    sqlite
+    vulkan-icd-loader
+    wayland
+    zlib
+    zstd
+)
+
+makedepends=(
+    cargo
+    clang
+    cmake
+    mold
+    pkg-config
+)
+
+# Source is the current directory (for local makepkg use).
+# CI uses package-cachyos.sh directly with the pre-built binary.
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+export RUSTFLAGS="-C link-arg=-fuse-ld=mold"
+export CARGO_HOME="${srcdir}/cargo-home"
+
+prepare() {
+    cd "${srcdir}/zed-${pkgver}"
+    cargo fetch --locked
+}
+
+build() {
+    cd "${srcdir}/zed-${pkgver}"
+    cargo build --release --frozen --bin zed
+    strip --strip-all "target/release/zed"
+}
+
+package() {
+    cd "${srcdir}/zed-${pkgver}"
+
+    # Binary
+    install -Dm755 "target/release/zed" "${pkgdir}/usr/bin/zed"
+
+    # Icon — try canonical location first, then fallbacks
+    for icon in \
+        "crates/zed/resources/app-icon.png" \
+        "assets/icons/app-icon.png" \
+        "assets/icons/app_icon.png" \
+        "assets/app-icon.png" \
+        "assets/zed.png"
+    do
+        if [[ -f "${icon}" ]]; then
+            install -Dm644 "${icon}" "${pkgdir}/usr/share/pixmaps/zed.png"
+            break
+        fi
+    done
+
+    # Desktop entry — render template if available, otherwise fallback
+    if [[ -f "assets/zed.desktop" ]]; then
+        install -Dm644 "assets/zed.desktop" \
+            "${pkgdir}/usr/share/applications/zed.desktop"
+    elif [[ -f "crates/zed/resources/zed.desktop.in" ]]; then
+        install -dm755 "${pkgdir}/usr/share/applications"
+        APP_NAME="Zed" APP_CLI="zed" APP_ARGS="%F" DO_STARTUP_NOTIFY="true" APP_ICON="zed" \
+            envsubst < "crates/zed/resources/zed.desktop.in" \
+            > "${pkgdir}/usr/share/applications/zed.desktop"
+    else
+        install -dm755 "${pkgdir}/usr/share/applications"
+        cat > "${pkgdir}/usr/share/applications/zed.desktop" <<'DESKTOP'
+[Desktop Entry]
+Name=Zed
+GenericName=Text Editor
+Comment=CruciTitan — AI-powered Zed editor
+Exec=zed %F
+Icon=zed
+Type=Application
+Categories=Development;IDE;TextEditor;
+MimeType=text/plain;application/json;application/xml;text/html;text/css;text/x-python;text/x-c++src;text/x-java;
+Keywords=editor;code;text;development;
+StartupNotify=true
+StartupWMClass=dev.zed.Zed
+DESKTOP
+    fi
+
+    # Bundled assets (themes, keymaps, languages)
+    for asset_dir in keymaps themes languages settings; do
+        if [[ -d "assets/${asset_dir}" ]]; then
+            install -dm755 "${pkgdir}/usr/share/zed/${asset_dir}"
+            cp -r "assets/${asset_dir}/." "${pkgdir}/usr/share/zed/${asset_dir}/"
+        fi
+    done
+}

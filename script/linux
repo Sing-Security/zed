@@ -199,6 +199,7 @@ if [[ -n $pacman ]]; then
   deps=(
     gcc
     clang
+    mold
     musl
     cmake
     alsa-lib
