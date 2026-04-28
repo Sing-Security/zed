@@ -39,16 +39,6 @@ jobs:
           echo "pkgrel=${PKGREL}"   >> "$GITHUB_OUTPUT"
           echo "pkgver=${VERSION}-${PKGREL}" >> "$GITHUB_OUTPUT"
 
-      - name: Ensure build dependencies are present
-        run: |
-          sudo apk add --no-cache \
-            build-base mold clang cmake pkgconf gettext \
-            rust cargo \
-            alsa-lib-dev fontconfig-dev libgit2-dev libxcb-dev \
-            libxkbcommon-dev openssl-dev sqlite-dev wayland-dev \
-            zlib-dev zstd-dev vulkan-loader-dev \
-            fakeroot libarchive-tools binutils
-
       - name: Build Zed (release)
         run: |
           cargo build --release --bin zed 2>&1 | tail -5
