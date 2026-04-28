@@ -27,7 +27,6 @@ install -dm755 "${PKGDIR}/usr/bin"
 install -dm755 "${PKGDIR}/usr/share/applications"
 install -dm755 "${PKGDIR}/usr/share/pixmaps"
 install -dm755 "${PKGDIR}/usr/share/zed/extensions"
-install -dm755 "${PKGDIR}/.PKGINFO"   # placeholder; overwritten below
 
 # ── 3. Binary ────────────────────────────────────────────────────────────────
 install -Dm755 "${BINARY}" "${PKGDIR}/usr/bin/zed"
