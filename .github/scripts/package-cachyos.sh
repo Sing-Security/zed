@@ -151,7 +151,7 @@ PKG_PATH="${OUTDIR}/${PKG_FILENAME}"
     # bsdtar preserves ownership as root:root for package files
     fakeroot -- bash -c "
         chown -R root:root .
-        bsdtar -czf '../../${PKG_PATH}' --options 'zstd:compression-level=19' *  .PKGINFO .INSTALL
+        tar -I 'zstd -19' -cf '../../${PKG_PATH}' * .PKGINFO .INSTALL
     "
 )
 
