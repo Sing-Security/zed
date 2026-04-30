@@ -15,6 +15,9 @@ env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
 
+permissions:
+  contents: write
+
 jobs:
   build-package:
     name: Build & Package (CachyOS)
