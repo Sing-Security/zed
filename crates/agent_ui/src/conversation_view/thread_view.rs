@@ -6449,9 +6449,7 @@ impl ThreadView {
                     ))
                     .into_any(),
                 ToolCallStatus::Pending | ToolCallStatus::InProgress
-                    if is_edit
-                        && tool_call.content.is_empty()
-                        && self.as_native_connection(cx).is_some() =>
+                    if is_edit && tool_call.content.is_empty() =>
                 {
                     self.render_diff_loading(cx)
                 }
@@ -7631,7 +7629,7 @@ impl ThreadView {
             })
             .child(if let Some(editor) = revealed_diff_editor {
                 editor.into_any_element()
-            } else if tool_progress && self.as_native_connection(cx).is_some() {
+            } else if tool_progress {
                 self.render_diff_loading(cx)
             } else {
                 Empty.into_any()
